@@ -1,11 +1,7 @@
 import numpy as np
 
-# import pyvips
 import cv2
 from PIL import ImageDraw, Image
-
-# from matplotlib import pyplot as plt
-# from matplotlib import patches
 
 
 class DBNetTargets:

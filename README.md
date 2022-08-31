@@ -6,10 +6,29 @@ ChemOCR(OCSR)
 DB(Differentiable Binarization)-based Optical Chemical Structure Recognition  
 </h3> 
 
+### Backbone
+
+- Swin
+- ResNet
+- MobileNetV3
+
+## Parser
+**Rule-based method**
+
+## DATA
+
+- ChEMBL: https://www.ebi.ac.uk/chembl/
+
+### Training data sample
+<img src="data/sample_data.png">
+
+### Limitation
+- Molecular Weight < 600
+- Non-ion molecule
 
 ### TODO
 - [ ] Character recognition
-- [ ] Bond direction
+- [ ] Bond direction analysis
 - [ ] Docs
 - [ ] Web front-end (streamlit or svelte-kit)
 
