@@ -1,5 +1,9 @@
 # User defined
 *.csv
+*.pth
+backup
+*_data/
+log/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -27,7 +27,7 @@ DB(Differentiable Binarization)-based Optical Chemical Structure Recognition
 - Non-ion molecule
 
 ### TODO
-- [ ] Character recognition
+- [ ] Character recognition (performance)
 - [ ] Bond direction analysis
 - [ ] Docs
 - [ ] Web front-end (streamlit or svelte-kit)

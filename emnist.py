@@ -2,42 +2,6 @@ import numpy as np
 
 import torch
 from torch import nn
-from torch.utils.data import Dataset
-from torchvision import datasets
-import matplotlib.pyplot as plt
-
-from torch.utils.data import DataLoader
-
-from torch.cuda.amp.grad_scaler import GradScaler
-from torch.cuda.amp.autocast_mode import autocast
-
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-
-train_transform = A.Compose(
-    [
-        A.Resize(14, 14),
-        A.HorizontalFlip(True),
-        A.Rotate((90, 90), always_apply=True),
-        # A.Blur(blur_limit=4, p=0.3),
-        # A.RandomBrightnessContrast(p=0.3),
-        A.GaussNoise(var_limit=(0, 0.2), p=0.3),
-        # A.CoarseDropout(4, 3, p=0.3),
-        A.InvertImg(p=1),
-        A.Normalize(mean=(0.45), std=(0.22), max_pixel_value=255),
-        ToTensorV2(),
-    ]
-)
-test_transform = A.Compose(
-    [
-        A.Resize(14, 14),
-        A.HorizontalFlip(True),
-        A.Rotate((90, 90), always_apply=True),
-        A.InvertImg(p=1),
-        A.Normalize(mean=(0.45), std=(0.22), max_pixel_value=255),
-        ToTensorV2(),
-    ]
-)
 
 
 def get_train_transform(image):
@@ -50,34 +14,6 @@ def get_test_transform(image):
     image = np.array(image, dtype=np.uint8)
     x = test_transform(image=image)
     return x["image"]
-
-
-training_data = datasets.EMNIST(
-    split="byclass",
-    # split='letters',
-    root="data",
-    train=True,
-    download=True,
-    transform=get_train_transform,
-)
-
-test_data = datasets.EMNIST(
-    split="byclass",
-    # split='letters',
-    root="data",
-    train=False,
-    download=True,
-    transform=get_test_transform,
-)
-
-train_dataloader = DataLoader(
-    training_data, batch_size=1024, shuffle=True, num_workers=4
-)
-test_dataloader = DataLoader(test_data, batch_size=1024, shuffle=True, num_workers=4)
-
-
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Using {device} device")
 
 
 class NeuralNetwork(nn.Module):
@@ -107,12 +43,6 @@ class NeuralNetwork(nn.Module):
         x = x.squeeze(-1)
         x = x.squeeze(-1)
         return x
-
-
-model = NeuralNetwork()
-model.to(device)
-
-loss_fn = torch.nn.CrossEntropyLoss()
 
 
 def train(dataloader, model, loss_fn, optimizer, autocast_enabled):
@@ -162,14 +92,85 @@ def test(dataloader, model, loss_fn):
     )
 
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5)
+if __name__ == "__main__":
 
-epochs = 5
-for t in range(epochs):
-    print(f"Epoch {t+1}\n-------------------------------")
-    train(train_dataloader, model, loss_fn, optimizer, True)
-    test(test_dataloader, model, loss_fn)
-    # if t % 5 == 0:
-print("Done!")
+    from torch.utils.data import Dataset
+    from torchvision import datasets
 
-torch.save(model.state_dict(), "model_weights.mbv3l.emnist.pth")
+    from torch.utils.data import DataLoader
+
+    from torch.cuda.amp.grad_scaler import GradScaler
+    from torch.cuda.amp.autocast_mode import autocast
+
+    import albumentations as A
+    from albumentations.pytorch import ToTensorV2
+
+    train_transform = A.Compose(
+        [
+            A.Resize(14, 14),
+            A.HorizontalFlip(True),
+            A.Rotate((90, 90), always_apply=True),
+            # A.Blur(blur_limit=4, p=0.3),
+            # A.RandomBrightnessContrast(p=0.3),
+            A.GaussNoise(var_limit=(0, 0.2), p=0.3),
+            # A.CoarseDropout(4, 3, p=0.3),
+            A.InvertImg(p=1),
+            A.Normalize(mean=(0.45), std=(0.22), max_pixel_value=255),
+            ToTensorV2(),
+        ]
+    )
+    test_transform = A.Compose(
+        [
+            A.Resize(14, 14),
+            A.HorizontalFlip(True),
+            A.Rotate((90, 90), always_apply=True),
+            A.InvertImg(p=1),
+            A.Normalize(mean=(0.45), std=(0.22), max_pixel_value=255),
+            ToTensorV2(),
+        ]
+    )
+
+    training_data = datasets.EMNIST(
+        split="byclass",
+        # split='letters',
+        root="emnist_data",
+        train=True,
+        download=True,
+        transform=get_train_transform,
+    )
+
+    test_data = datasets.EMNIST(
+        split="byclass",
+        # split='letters',
+        root="emnist_data",
+        train=False,
+        download=True,
+        transform=get_test_transform,
+    )
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Using {device} device")
+
+    model = NeuralNetwork()
+    model.to(device)
+
+    loss_fn = torch.nn.CrossEntropyLoss()
+
+    train_dataloader = DataLoader(
+        training_data, batch_size=1024, shuffle=True, num_workers=4
+    )
+    test_dataloader = DataLoader(
+        test_data, batch_size=1024, shuffle=True, num_workers=4
+    )
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
+
+    epochs = 10
+    for t in range(epochs):
+        print(f"Epoch {t+1}\n-------------------------------")
+        train(train_dataloader, model, loss_fn, optimizer, True)
+        test(test_dataloader, model, loss_fn)
+        # if t % 5 == 0:
+    print("Done!")
+
+    torch.save(model.state_dict(), "model_weights.emnist.pth")

@@ -25,7 +25,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(name)-8s %(levelname)-6s %(message)s",
     datefmt="%m-%d %H:%M",
-    filename=f"{cur_time_str}.log",
+    filename=f"log/{cur_time_str}.log",
     filemode="w",
 )
 
@@ -39,13 +39,13 @@ def collate_fn(batch):
 def main(args):
 
     # ------ CONFIG
-    HOME = "/home/doodleduck"
-    DATA_DIR = f"{HOME}/Data/CHEMBL/OCRv9"
+    HOME = ".."
+    DATA_DIR = f"{HOME}/Data/ChEMBL/OCR"
     TRAIN_PROCESS = ["train", "val"]
     DATAFRAME_LIST = dict(
-        train=f"{HOME}/Data/chembl_30_chemreps_train.w.csv",
-        val=f"{HOME}/Data/chembl_30_chemreps_eval.csv",
-        test=f"{HOME}/Data/chembl_30_chemreps_test.csv",
+        train=f"data/chembl_31_smiles_train.csv",
+        val=f"data/chembl_31_smiles_val.csv",
+        test=f"data/chembl_31_smiles_test.csv",
     )
 
     # ------ WANDB CONFIG
@@ -98,8 +98,6 @@ def main(args):
         torch.load("backup/model_weights.mbv3s.5n128h320.8c.pth"), strict=False
     )
     # model.load_state_dict(torch.load("backup/model_weights.mbv3s.5n128h320.8c.pth"))
-    # model.load_state_dict(torch.load("model_weights.v8.mbv3s.final.pth"))
-    # model.load_state_dict(torch.load('model_weights.swin.final.pth'), strict=False)
     model.to(device)
     logger.info(f"Model progress. {time.perf_counter() - _time:.4f}s")
 
@@ -108,10 +106,6 @@ def main(args):
         model.parameters(),
         lr=args["lr"],
     )
-    # optimizer = optim.SGD(
-    #     model.parameters(),
-    #     lr=args['lr'],
-    # )
 
     # ------ LOSS
     _wy = torch.Tensor([0.1, 0.4, 0.4, 0.4, 0.4, 1, 1, 0.6]).to(device)
@@ -143,7 +137,7 @@ def main(args):
         )
 
         metric.update(metrics)
-        metric.plot()
+        metric.plot(save_path='log')
         # metric.wandb_update()
 
         if (epoch + 1) % 5 == 0:
