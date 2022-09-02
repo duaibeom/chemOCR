@@ -4,6 +4,7 @@
 backup
 *_data/
 log/
+tmp_img/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

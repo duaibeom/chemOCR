@@ -93,7 +93,9 @@ class DBNetTargets:
             box = cv2.boxPoints(rect).astype(np.int32)[:, None, :]
 
             cv2.fillPoly(_dummy, [box], 1)  # v7
+            cv2.drawContours(_dummy, [box], 0, 0, 1)  # v7
             char_mask.append(np.array(_dummy, dtype=np.uint8))
+            cv2.fillPoly(_dummy, [box], 1)
             cv2.drawContours(_dummy, [box], 0, 1, 2)  # v7
             char_buffered_mask.append(np.array(_dummy, dtype=np.uint8))
 
