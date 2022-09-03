@@ -14,12 +14,7 @@ custom_cnt_aug = CustomCenterPadImage(50)
 
 @timer
 class CustomDataset(Dataset):
-
-    def __init__(self,
-                 data_df: str,
-                 mode: str,
-                 dir_path: str,
-                 transforms=None):
+    def __init__(self, data_df: str, mode: str, dir_path: str, transforms=None):
         super().__init__()
         self.mode = mode
         self.df = pd.read_csv(data_df)
@@ -40,17 +35,22 @@ class CustomDataset(Dataset):
     ):
 
         _id = self.df.iloc[index, 0]
-        _dir = f"{self.dir_path}/{_id[6]}/{_id[7]}/{_id[8]}/{_id[9]}/{_id[10]}"
+
+        rnd_int = np.random.randint(0, 3)
+
+        if self.mode in ("train", "val"):
+            _dir = f"{self.dir_path}_{rnd_int}/{_id[6]}/{_id[7]}/{_id[8]}/{_id[9]}/{_id[10]}"
+        else:
+            _dir = f"{self.dir_path}/{_id[6]}/{_id[7]}/{_id[8]}/{_id[9]}/{_id[10]}"
 
         image = self.load_image(f"{_dir}/{_id}.png")
 
-        if self.mode in ('train', 'val'):
+        if self.mode in ("train", "val"):
             gt_shr = self.load_image(f"{_dir}/{_id}.shr.png", mask=True)
             # gt_shr_mask = self.load_image(f"{_dir}/{_id}.shr_mask.png", mask=True)
             gt_shr_mask = (gt_shr > 0).astype(np.uint8)
             gt_thr = self.load_image(f"{_dir}/{_id}.thr.png")
-            gt_thr_mask = self.load_image(f"{_dir}/{_id}.thr_mask.png",
-                                          mask=True)
+            gt_thr_mask = self.load_image(f"{_dir}/{_id}.thr_mask.png", mask=True)
 
             masks = [gt_shr, gt_shr_mask, gt_thr, gt_thr_mask]
 
@@ -65,7 +65,7 @@ class CustomDataset(Dataset):
 
             return image, masks[0], masks[1], masks[2], masks[3]
 
-        elif self.mode == 'test':
+        elif self.mode == "test":
 
             image = custom_cnt_aug(image=image)
 
@@ -73,7 +73,7 @@ class CustomDataset(Dataset):
             if self.transforms is not None:
                 transformed = self.transforms(image=image)
                 image = transformed["image"]
-            return image  #, image_infos
+            return image  # , image_infos
 
     def __len__(self) -> int:
         return len(self.df)

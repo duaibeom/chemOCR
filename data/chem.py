@@ -30,19 +30,34 @@ class MolSVG:
         mol: str or Chem.rdchem.Mol,
         precision: int = 0,
         comic: bool = False,
-        mono_color=True,
+        bondLineWidth: int = 2,
+        scalingFactor: int = 20,
+        padding: float = 0.05,
+        additionalAtomLabelPadding: float = 0.0,
+        multipleBondOffset: float = 0.15,
+        fixedFontSize: int = -1,
+        gray: bool = False,
+        mono_color_image=True,
     ) -> None:
         if isinstance(mol, str):
             mol = Chem.MolFromSmiles(mol)
 
         self.comic = comic
         self.mol = mol
-        self.draw_ops = self.get_draw_options(gray=mono_color)
+        self.draw_ops = self.get_draw_options(
+            bondLineWidth = bondLineWidth,
+            scalingFactor = scalingFactor,
+            padding = padding,
+            additionalAtomLabelPadding = additionalAtomLabelPadding,
+            multipleBondOffset = multipleBondOffset,
+            fixedFontSize = fixedFontSize,
+            gray = gray,
+            )
         self.d2d = self.get_d2d(precision)
         self.svg_raw = self.d2d.GetDrawingText()
 
         _img = pyvips.Image.svgload_buffer(self.svg_raw.encode())
-        if mono_color:
+        if mono_color_image:
             _img = _img.colourspace("b-w").numpy()[:, :, 0]
 
         self.image = _img
@@ -129,7 +144,6 @@ class MolSVG:
         multipleBondOffset: float = 0.15,
         fixedFontSize: int = -1,
         gray: bool = False,
-        color: str = None,
     ) -> rdMolDraw2D.MolDrawOptions:
         _d2d_ops = rdMolDraw2D.MolDrawOptions()
         # _d2d_ops.useAvalonAtomPalette()

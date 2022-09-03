@@ -94,9 +94,10 @@ def main(args):
         out_channels=64,
         head_in_channels=320,
     )
-    model.load_state_dict(
-        torch.load("backup/model_weights.mbv3s.5n128h320.8c.pth"), strict=False
-    )
+    # model.load_state_dict(
+    #     torch.load("backup/model_weights.mbv3s.5n128h320.8c.pth"), strict=False
+    # )
+    model.load_state_dict(torch.load("model_weights.v9.mbv3s.final.pth"), strict=False)
     # model.load_state_dict(torch.load("backup/model_weights.mbv3s.5n128h320.8c.pth"))
     model.to(device)
     logger.info(f"Model progress. {time.perf_counter() - _time:.4f}s")
@@ -137,7 +138,7 @@ def main(args):
         )
 
         metric.update(metrics)
-        metric.plot(save_path='log')
+        metric.plot(save_path="log")
         # metric.wandb_update()
 
         if (epoch + 1) % 5 == 0:
@@ -154,5 +155,5 @@ if __name__ == "__main__":
         torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
     )
 
-    params = dict(epochs=60, lr=5e-5, batch_size=32, fp16=True)
+    params = dict(epochs=50, lr=3e-5, batch_size=32, fp16=True)
     main(params)

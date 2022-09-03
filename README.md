@@ -25,6 +25,7 @@ DB(Differentiable Binarization)-based Optical Chemical Structure Recognition
 ### Limitation
 - Molecular Weight < 600
 - Non-ion molecule
+- (Inner bridged) Complex Ring is not possible.
 
 ### TODO
 - [ ] Character recognition (performance)

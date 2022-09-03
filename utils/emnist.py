@@ -2,6 +2,81 @@ import numpy as np
 
 import torch
 from torch import nn
+import torch.nn.functional as F
+
+eminst_class = [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "i",
+    "j",
+    "k",
+    "l",
+    "m",
+    "n",
+    "o",
+    "p",
+    "q",
+    "r",
+    "s",
+    "t",
+    "u",
+    "v",
+    "w",
+    "x",
+    "y",
+    "z",  # index 61
+]
+
+
+def denormalize(x, mean=[0.5], std=[0.22]):
+    # 3, H, W, B
+    ten = x.clone()
+    for t, m, s in zip(ten, mean, std):
+        t.mul_(s).add_(m)
+    # B, 3, H, W
+    return torch.clamp(ten, 0, 1).detach().numpy()
 
 
 def get_train_transform(image):
@@ -33,7 +108,7 @@ class NeuralNetwork(nn.Module):
         )
         # self.fc = nn.Linear(256, 62)
         self.fc = nn.Conv2d(256, 512, 1)
-        self.fc1 = nn.Conv2d(512, 62, 1)
+        self.fc1 = nn.Conv2d(512, 100, 1)
 
     def forward(self, x):
         x = self.conv_stack(x)
@@ -43,6 +118,53 @@ class NeuralNetwork(nn.Module):
         x = x.squeeze(-1)
         x = x.squeeze(-1)
         return x
+
+
+class PredictAtomChar:
+    def __init__(self, rule_func=None, return_img: bool = False):
+        self.return_img = return_img
+        self.model = NeuralNetwork()
+        self.model.load_state_dict(torch.load("utils/model_weights.emnist.pth"))
+        self.model.eval()
+
+        if rule_func is None:
+
+            def rule_func(pred):
+                if pred in ["0", "Q"]:
+                    pred = "O"
+                elif pred in ["A"]:
+                    pred = "H"
+                elif pred in ["a"]:
+                    pred = "Cl"
+                elif pred in ["E"]:
+                    pred = "F"
+                elif pred in ["5"]:
+                    pred = "S"
+                return pred
+
+        self.rules = rule_func
+
+    def __call__(self, char_pos, image, img_size: tuple = (14, 14)):
+
+        pred_char_list = []
+        pred_img_char_list = []
+
+        for i in char_pos:
+            _max, _min = i
+            _image = image[:, :, _min[1] : _max[1], _min[0] : _max[0]]
+            _image = F.pad(_image, (3, 3, 3, 3), value=2.2727)
+            _image = F.interpolate(_image, size=img_size, mode="bilinear")
+            pred = eminst_class[self.model(_image).argmax()]
+            pred = self.rules(pred)
+
+            pred_char_list.append(pred)
+            if self.return_img:
+                pred_img_char_list.append(denormalize(_image[0, 0]))
+
+        if self.return_img:
+            return pred_char_list, pred_img_char_list
+        else:
+            return pred_char_list
 
 
 def train(dataloader, model, loss_fn, optimizer, autocast_enabled):
@@ -165,7 +287,7 @@ if __name__ == "__main__":
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
 
-    epochs = 10
+    epochs = 12
     for t in range(epochs):
         print(f"Epoch {t+1}\n-------------------------------")
         train(train_dataloader, model, loss_fn, optimizer, True)
