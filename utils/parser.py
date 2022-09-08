@@ -3,13 +3,9 @@ from math import ceil
 import cv2
 import numpy as np
 
-import rdkit
-from rdkit import Chem, rdBase
-from rdkit.Chem import rdDistGeom, rdDepictor, rdCoordGen
+from rdkit import Chem
 
 from utils.emnist import PredictAtomChar
-
-char_model = PredictAtomChar(return_img=True)
 
 b_type_list = {
     3: Chem.BondType.SINGLE,
@@ -64,7 +60,14 @@ def cal_avg_dist(contours):
 
 def get_pair(array1, array2):
     _dist = np.abs(array1[None, :, :] - array2[:, None, :]).max(axis=2)
-    return _dist.min(axis=0).argsort()[:2]
+    _dist.min(axis=0).argsort()
+    min_dist = _dist.min(axis=0)
+    min_index = min_dist.argsort()
+    limit_idx = min_index[:2]
+    # print(min_dist[limit_idx[1]])
+    if min_dist[limit_idx[1]] > 6.7:
+        return
+    return limit_idx
 
 
 def extreme_points(contour):
@@ -78,8 +81,8 @@ def extreme_points(contour):
 def get_min_max_polygon(_polygon):
     max_x, max_y = _polygon.max(axis=0)[0]
     min_x, min_y = _polygon.min(axis=0)[0]
-    _max = [ceil(max_x) + 2, ceil(max_y) + 2]
-    _min = [int(min_x) - 1, int(min_y) - 1]
+    _max = [ceil(max_x) + 3, ceil(max_y) + 3]
+    _min = [int(min_x) - 2, int(min_y) - 2]
     return [_max, _min]
 
 
@@ -91,7 +94,7 @@ def chunk_char(array, cutoff):
     return _dist
 
 
-def get_mol_conn_info(out, image):
+def get_mol_conn_info(out, image, char_model):
 
     contours = {}
     char_pos = []
@@ -109,12 +112,15 @@ def get_mol_conn_info(out, image):
             if _polygon.shape.__len__() > 1:
                 rect = cv2.minAreaRect(_polygon)
                 (x, y), (w, h), ang = rect
-                if w * h > 9:
+                if w * h > 5:
                     box = cv2.boxPoints(rect)
                     _ctrs.append([x, y])
                     if idx == 2:
                         char_pos.append(get_min_max_polygon(_polygon))
         contours[idx] = np.array(_ctrs, dtype=np.float16)
+
+    pred_char_list, pred_img_char_list = char_model(char_pos, image)
+    heavy_atom = np.ones(contours[2].__len__(), dtype=np.uint8)
 
     b_pair = {}
     polygons = {}
@@ -129,7 +135,7 @@ def get_mol_conn_info(out, image):
         _ctrs = []
         _poly = []
         if _contours.__len__() == 0:
-            # contours[idx] = None
+            contours[idx] = None
             polygons[idx] = None
             continue
         for _polygon in _contours:
@@ -137,21 +143,16 @@ def get_mol_conn_info(out, image):
             if cv2.contourArea(_polygon) > 1:
                 rect = cv2.minAreaRect(_polygon)
                 (x, y), (w, h), ang = rect
-                if w * h > 9:
-                    box = cv2.boxPoints(rect)
-                    _ctrs.append([x, y])
-                    _poly.append(box)
-                    bond_length.append([w, h])
+                if (w * h > 30) and idx > 3:
+                    append_func(_ctrs, rect, x, y, w, h, bond_length, _poly)
+                elif (w * h > 9) and idx == 3:
+                    append_func(_ctrs, rect, x, y, w, h, bond_length, _poly)
 
-        # contours[idx] = np.array(_ctrs, dtype=np.float16)
+        contours[idx] = np.array(_ctrs, dtype=np.float16)
         polygons[idx] = np.array(_poly, dtype=np.float16)
 
     bond_avg_length = np.array(bond_length, dtype=np.float16).max(axis=1).mean()
     chunked_char = chunk_char(contours[2], bond_avg_length)
-
-    heavy_atom = np.ones(contours[2].__len__(), dtype=np.uint8)
-
-    pred_char_list, pred_img_char_list = char_model(char_pos, image)
 
     for i in chunked_char:
         a = pred_char_list[i[0]]
@@ -170,7 +171,9 @@ def get_mol_conn_info(out, image):
         if polygons[idx] is not None:
             b_pair[idx] = []
             for _polygon in polygons[idx]:
-                b_pair[idx].append(get_pair(pts, _polygon))
+                _pair_idx = get_pair(pts, _polygon)
+                if _pair_idx is not None:
+                    b_pair[idx].append(_pair_idx)
 
     return contours, b_pair, pred_heavy_char_list, pred_char_list, pred_img_char_list
 
@@ -235,3 +238,10 @@ def get_mol(contours, pred_char_list, b_pair):
     smi = Chem.MolToSmiles(mol)
     mol = Chem.MolFromSmiles(smi)
     return mol, smi
+
+
+def append_func(_ctrs, rect, x, y, w, h, bond_length, _poly):
+    box = cv2.boxPoints(rect)
+    _ctrs.append([x, y])
+    _poly.append(box)
+    bond_length.append([w, h])

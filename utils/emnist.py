@@ -67,26 +67,38 @@ eminst_class = [
     "x",
     "y",
     "z",  # index 61
+    "-",  # index 61
+    "+",  # index 61
+    "Br",
+    "Cl",
 ]
 
 
+# def denormalize(x, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
 def denormalize(x, mean=[0.5], std=[0.22]):
     # 3, H, W, B
     ten = x.clone()
     for t, m, s in zip(ten, mean, std):
         t.mul_(s).add_(m)
     # B, 3, H, W
+    ten = ten.permute(1, 2, 0)
     return torch.clamp(ten, 0, 1).detach().numpy()
 
 
 def get_train_transform(image):
-    image = np.array(image, dtype=np.uint8)
+    image = np.array(image, dtype=np.int16)
+    image -= 255
+    image *= -1
+    image = image.astype(np.uint8)[:, :, None].repeat(3, axis=2)
     x = train_transform(image=image)
     return x["image"]
 
 
 def get_test_transform(image):
-    image = np.array(image, dtype=np.uint8)
+    image = np.array(image, dtype=np.int16)
+    image -= 255
+    image *= -1
+    image = image.astype(np.uint8)[:, :, None].repeat(3, axis=2)
     x = test_transform(image=image)
     return x["image"]
 
@@ -125,6 +137,7 @@ class PredictAtomChar:
         self.return_img = return_img
         self.model = NeuralNetwork()
         self.model.load_state_dict(torch.load("utils/model_weights.emnist.pth"))
+        # self.model.load_state_dict(torch.load("utils/model_weights.fix.pth"))
         self.model.eval()
 
         if rule_func is None:
@@ -134,32 +147,45 @@ class PredictAtomChar:
                     pred = "O"
                 elif pred in ["A"]:
                     pred = "H"
-                elif pred in ["a"]:
+                elif pred in ["a", "C"]:
                     pred = "Cl"
-                elif pred in ["E"]:
+                elif pred in ["E", "t"]:
                     pred = "F"
-                elif pred in ["5"]:
+                elif pred in ["5", "3"]:
                     pred = "S"
                 return pred
 
         self.rules = rule_func
 
-    def __call__(self, char_pos, image, img_size: tuple = (14, 14)):
+    def pre_img(self, _img):
+        # y = .2126 * _img[:, :, 2] + .7152 * _img[:, :, 1] + .0722 * _img[:, :, 0]
+        y = 0.33 * _img[:, 0, :, :] + 0.33 * _img[:, 1, :, :] + 0.33 * _img[:, 2, :, :]
+        y = ((y > 0.8).to(dtype=torch.float32) - 0.5) / 0.22
+        return y[
+            :,
+            None,
+        ]
+
+    def __call__(self, char_pos, image, img_size: tuple = (20, 20)):
 
         pred_char_list = []
         pred_img_char_list = []
 
+        image = self.pre_img(image)
+
         for i in char_pos:
             _max, _min = i
             _image = image[:, :, _min[1] : _max[1], _min[0] : _max[0]]
-            _image = F.pad(_image, (3, 3, 3, 3), value=2.2727)
+            _image = F.pad(_image, (2, 2, 2, 2), value=2.2727)
             _image = F.interpolate(_image, size=img_size, mode="bilinear")
+            # _image = F.interpolate(_image, size=img_size)
             pred = eminst_class[self.model(_image).argmax()]
+            # pred = "0"
             pred = self.rules(pred)
 
             pred_char_list.append(pred)
             if self.return_img:
-                pred_img_char_list.append(denormalize(_image[0, 0]))
+                pred_img_char_list.append(denormalize(_image[0]))
 
         if self.return_img:
             return pred_char_list, pred_img_char_list
@@ -229,25 +255,27 @@ if __name__ == "__main__":
 
     train_transform = A.Compose(
         [
-            A.Resize(14, 14),
+            A.Resize(20, 20),
+            # A.InvertImg(p=1),
             A.HorizontalFlip(True),
             A.Rotate((90, 90), always_apply=True),
-            # A.Blur(blur_limit=4, p=0.3),
-            # A.RandomBrightnessContrast(p=0.3),
-            A.GaussNoise(var_limit=(0, 0.2), p=0.3),
-            # A.CoarseDropout(4, 3, p=0.3),
-            A.InvertImg(p=1),
-            A.Normalize(mean=(0.45), std=(0.22), max_pixel_value=255),
+            # A.Blur(blur_limit=3, p=0.4),
+            A.RandomBrightnessContrast(p=0.4),
+            # A.GaussNoise(p=0.3),
+            # A.CoarseDropout(4, 2, 2, p=0.3),
+            # A.Normalize(mean=(0.5), std=(0.22)),
+            A.Normalize(),
             ToTensorV2(),
         ]
     )
     test_transform = A.Compose(
         [
-            A.Resize(14, 14),
+            A.Resize(20, 20),
+            # A.InvertImg(p=1),
             A.HorizontalFlip(True),
             A.Rotate((90, 90), always_apply=True),
-            A.InvertImg(p=1),
-            A.Normalize(mean=(0.45), std=(0.22), max_pixel_value=255),
+            A.Normalize(mean=(0.5), std=(0.22)),
+            # A.Normalize(),
             ToTensorV2(),
         ]
     )
@@ -274,6 +302,7 @@ if __name__ == "__main__":
     print(f"Using {device} device")
 
     model = NeuralNetwork()
+    # model.load_state_dict(torch.load("model_weights.emnist.pth"), strict=False)
     model.to(device)
 
     loss_fn = torch.nn.CrossEntropyLoss()
@@ -285,9 +314,9 @@ if __name__ == "__main__":
         test_data, batch_size=1024, shuffle=True, num_workers=4
     )
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
 
-    epochs = 12
+    epochs = 5
     for t in range(epochs):
         print(f"Epoch {t+1}\n-------------------------------")
         train(train_dataloader, model, loss_fn, optimizer, True)

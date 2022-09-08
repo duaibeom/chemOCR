@@ -36,8 +36,9 @@ class MolSVG:
         additionalAtomLabelPadding: float = 0.0,
         multipleBondOffset: float = 0.15,
         fixedFontSize: int = -1,
+        fixedBondLength: float = -1,
+        mono_color_image: bool = False,
         gray: bool = False,
-        mono_color_image=True,
     ) -> None:
         if isinstance(mol, str):
             mol = Chem.MolFromSmiles(mol)
@@ -45,23 +46,32 @@ class MolSVG:
         self.comic = comic
         self.mol = mol
         self.draw_ops = self.get_draw_options(
-            bondLineWidth = bondLineWidth,
-            scalingFactor = scalingFactor,
-            padding = padding,
-            additionalAtomLabelPadding = additionalAtomLabelPadding,
-            multipleBondOffset = multipleBondOffset,
-            fixedFontSize = fixedFontSize,
-            gray = gray,
-            )
-        self.d2d = self.get_d2d(precision)
-        self.svg_raw = self.d2d.GetDrawingText()
+            bondLineWidth=bondLineWidth,
+            scalingFactor=scalingFactor,
+            padding=padding,
+            additionalAtomLabelPadding=additionalAtomLabelPadding,
+            multipleBondOffset=multipleBondOffset,
+            fixedFontSize=fixedFontSize,
+            fixedBondLength=fixedBondLength,
+        )
+        if gray:
+            self.draw_ops.useBWAtomPalette()
+        _d2d = self.get_d2d(precision)
+        _svg_raw = _d2d.GetDrawingText()
 
-        _img = pyvips.Image.svgload_buffer(self.svg_raw.encode())
+        _img = pyvips.Image.svgload_buffer(_svg_raw.encode())
         if mono_color_image:
             _img = _img.colourspace("b-w").numpy()[:, :, 0]
+        else:
+            # _img = _img.colourspace("rgb").numpy()[:, :, 0]
+            _img = _img.numpy()
 
         self.image = _img
         self.image_size = tuple(_img.shape[:2])
+
+        self.draw_ops.useBWAtomPalette()
+        self.d2d = self.get_d2d(precision)
+        self.svg_raw = self.d2d.GetDrawingText()
 
     def get_mol_mask(self):
 
@@ -143,7 +153,7 @@ class MolSVG:
         additionalAtomLabelPadding: float = 0.0,
         multipleBondOffset: float = 0.15,
         fixedFontSize: int = -1,
-        gray: bool = False,
+        fixedBondLength: float = -1,
     ) -> rdMolDraw2D.MolDrawOptions:
         _d2d_ops = rdMolDraw2D.MolDrawOptions()
         # _d2d_ops.useAvalonAtomPalette()
@@ -153,10 +163,8 @@ class MolSVG:
         _d2d_ops.padding = padding
         _d2d_ops.additionalAtomLabelPadding = additionalAtomLabelPadding  # ~ 0.17
         _d2d_ops.multipleBondOffset = multipleBondOffset  # (0.08 ~ 0.22)  default: 0.15
+        _d2d_ops.fixedBondLength = fixedBondLength  # -1
         # _d2d_ops.fontFile()
-
-        if gray:
-            _d2d_ops.useBWAtomPalette()
 
         return _d2d_ops
 

@@ -25,8 +25,9 @@ class CustomDataset(Dataset):
         with Image.open(file_name) as pikybow_image:
             image = np.array(pikybow_image, dtype=np.uint8)
         if not mask:
-            image = image.astype(np.float32)
-            image /= 255
+            # image = image.astype(np.float32)
+            # image /= 255
+            image = image[:, :, :3]
         return image
 
     def __getitem__(
@@ -36,7 +37,7 @@ class CustomDataset(Dataset):
 
         _id = self.df.iloc[index, 0]
 
-        rnd_int = np.random.randint(0, 3)
+        rnd_int = np.random.randint(0, 4)
 
         if self.mode in ("train", "val"):
             _dir = f"{self.dir_path}_{rnd_int}/{_id[6]}/{_id[7]}/{_id[8]}/{_id[9]}/{_id[10]}"
@@ -49,7 +50,10 @@ class CustomDataset(Dataset):
             gt_shr = self.load_image(f"{_dir}/{_id}.shr.png", mask=True)
             # gt_shr_mask = self.load_image(f"{_dir}/{_id}.shr_mask.png", mask=True)
             gt_shr_mask = (gt_shr > 0).astype(np.uint8)
-            gt_thr = self.load_image(f"{_dir}/{_id}.thr.png")
+            gt_thr = (
+                self.load_image(f"{_dir}/{_id}.thr.png", mask=True).astype(np.float32)
+                / 255
+            )
             gt_thr_mask = self.load_image(f"{_dir}/{_id}.thr_mask.png", mask=True)
 
             masks = [gt_shr, gt_shr_mask, gt_thr, gt_thr_mask]

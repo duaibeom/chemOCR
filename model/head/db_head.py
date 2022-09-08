@@ -61,9 +61,9 @@ class DBHead(nn.Module):
         self.in_channels = in_channels
         self.downsample_ratio = downsample_ratio
 
-        self.binarize = _init_binarize(in_channels)
+        # self.binarize = _init_binarize(in_channels)
         self.categorize = _init_categorize(
-            in_channels, out_channels=8, in_channel_scale=1
+            in_channels, out_channels=8, in_channel_scale=1.0
         )
         self.threshold = _init_binarize(in_channels)
 

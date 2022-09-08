@@ -11,7 +11,7 @@ import torch
 from torch.cuda.amp.grad_scaler import GradScaler
 from torch.cuda.amp.autocast_mode import autocast
 
-logger = logging.getLogger('train')
+logger = logging.getLogger("train")
 
 
 def train_one_epoch(
@@ -22,7 +22,7 @@ def train_one_epoch(
     criterion,
     device,
     scheduler=None,
-    train_process: list = ['train', 'val'],
+    train_process: list = ["train", "val"],
     autocast_enabled: bool = False,
 ):
 
@@ -33,7 +33,7 @@ def train_one_epoch(
 
     for phase in train_process:
 
-        if phase == 'train':
+        if phase == "train":
             model.train()  # Set model to training mode
         else:
             model.eval()  # Set model to evaluate mode
@@ -50,7 +50,8 @@ def train_one_epoch(
 
         # hist = np.zeros((22, 22))
         for images, gt_shr, gt_shr_mask, gt_thr, gt_thr_mask in tqdm(
-                dataloaders[phase]):
+            dataloaders[phase]
+        ):
             n_iter += 1
             optimizer.zero_grad()
 
@@ -63,17 +64,21 @@ def train_one_epoch(
             # gt_thr_mask = torch.ones_like(gt_thr).to(device)
 
             _time = time.perf_counter()
-            with torch.set_grad_enabled(phase == 'train'), autocast(
-                    enabled=autocast_enabled):
+            with torch.set_grad_enabled(phase == "train"), autocast(
+                enabled=autocast_enabled
+            ):
                 outputs = model(images)
-                losses = criterion(outputs, gt_shr, gt_shr_mask, gt_thr,
-                                   gt_thr_mask)
+                losses = criterion(outputs, gt_shr, gt_shr_mask, gt_thr, gt_thr_mask)
 
-                loss = losses['loss_prob'] + losses['loss_bi'] + losses[
-                    'loss_thr'] + losses['loss_cat']
-                # loss = losses['loss_prob'] + losses['loss_bi'] + losses['loss_thr']
+                loss = (
+                    losses["loss_prob"]
+                    + losses["loss_bi"]
+                    + losses["loss_thr"]
+                    + losses["loss_cat"]
+                )
+                # loss = losses["loss_prob"] + losses["loss_bi"] + losses["loss_thr"]
 
-                if phase == 'train':
+                if phase == "train":
                     if not autocast_enabled:
                         loss.backward()
                         optimizer.step()
@@ -83,10 +88,10 @@ def train_one_epoch(
                         scaler.update()
 
             total_loss += loss.cpu().item()
-            total_prob_loss += losses['loss_prob'].cpu().item()
-            total_bi_loss += losses['loss_bi'].cpu().item()
-            total_thr_loss += losses['loss_thr'].cpu().item()
-            total_cat_loss += losses['loss_cat'].cpu().item()
+            total_prob_loss += losses["loss_prob"].cpu().item()
+            total_bi_loss += losses["loss_bi"].cpu().item()
+            total_thr_loss += losses["loss_thr"].cpu().item()
+            total_cat_loss += losses["loss_cat"].cpu().item()
 
             cost_time += time.perf_counter() - _time
 

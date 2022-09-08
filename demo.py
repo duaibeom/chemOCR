@@ -34,7 +34,8 @@ def load_model():
         test=True,
     )
 
-    model.load_state_dict(torch.load("model_weights.v9.mbv3s.final.pth"), strict=False)
+    # model.load_state_dict(torch.load("model_weights.v9.mbv3s.final.pth"), strict=False)
+    model.load_state_dict(torch.load("model_weights.v9_rgb.mbv3s.5n192h480.final.pth"))
     model.eval()
     return model
 
@@ -44,7 +45,8 @@ def upload_image():
     Args:
         bgr2rgb (bool): converts BGR image to RGB if True
     """
-    file = st.sidebar.file_uploader(
+    # file = st.sidebar.file_uploader(
+    file = st.file_uploader(
         "Upload your image (jpg, jpeg, or png)", ["jpg", "jpeg", "png"]
     )
     if file is not None:
@@ -102,8 +104,9 @@ def main():
 
     model = load_model()
 
-    input_image = upload_image()
     _transforms = get_test_transform()
+
+    input_image = upload_image()
 
     col1, col2 = st.columns(2)
 
@@ -121,7 +124,7 @@ def main():
         if input_image is not None:
             mol, smi = predict_mol(input_image, model, _transforms)
             st.image(draw_mol(mol))
-            smi
+            st.write(f"`{smi}`")
         else:
             st.image("https://static.streamlit.io/examples/dog.jpg")
 

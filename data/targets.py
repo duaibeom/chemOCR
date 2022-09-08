@@ -54,9 +54,10 @@ class DBNetTargets:
             bType = bond_data_bType[idx] + 2
 
             cv2.fillPoly(_dummy, [hull], bType)  # v7
+            # cv2.drawContours(_dummy, [hull], 0, 0, 1)  # v7
             bond_mask.append(np.array(_dummy, dtype=np.uint8))
             cv2.fillPoly(_dummy_buffered, [hull], 1)  # v7
-            cv2.drawContours(_dummy_buffered, [hull], 0, 1, 3)  # v7
+            cv2.drawContours(_dummy_buffered, [hull], 0, 1, 2)  # v7
             bond_buffered_mask.append(np.array(_dummy_buffered, dtype=np.uint8))
             idx += 1
 
@@ -91,12 +92,17 @@ class DBNetTargets:
             contours = np.concatenate(contours, axis=0)
             rect = cv2.minAreaRect(contours)
             box = cv2.boxPoints(rect).astype(np.int32)[:, None, :]
+            (x, y), (w, h), ang = rect
 
             cv2.fillPoly(_dummy, [box], 1)  # v7
-            cv2.drawContours(_dummy, [box], 0, 0, 1)  # v7
+            if (w > 4) and (h > 4):
+                cv2.drawContours(_dummy, [box], 0, 0, 2)  # v7
+            else:
+                cv2.drawContours(_dummy, [box], 0, 1, 1)  # v7
+
             char_mask.append(np.array(_dummy, dtype=np.uint8))
             cv2.fillPoly(_dummy, [box], 1)
-            cv2.drawContours(_dummy, [box], 0, 1, 2)  # v7
+            cv2.drawContours(_dummy, [box], 0, 1, 1)  # v7
             char_buffered_mask.append(np.array(_dummy, dtype=np.uint8))
 
         char_mask_list = np.array(char_mask, dtype=np.uint8)
@@ -122,7 +128,8 @@ class DBNetTargets:
 
             cv2.fillPoly(_dummy, [_poly], 1)  # v7
             atom_buffered_mask.append(np.array(_dummy, dtype=np.uint8))
-            cv2.drawContours(_dummy, [_poly], 0, 0, 2)  # v7
+            cv2.drawContours(_dummy, [_poly], 0, 0, 3)  # v7
+            # cv2.drawContours(_dummy, [_poly], 0, 0, 6)  # v7
             atom_mask.append(np.array(_dummy, dtype=np.uint8))
 
         atom_mask = np.array(atom_mask, dtype=np.uint8).sum(axis=0)
@@ -166,7 +173,7 @@ class DBNetTargets:
             cv2.CHAIN_APPROX_SIMPLE,
         )
 
-        cv2.drawContours(thr_map, contours, -1, 1, 2)
+        cv2.drawContours(thr_map, contours, -1, 1, 1)
         thr_map = thr_map * self.thr_min_max_diff
         thr_map += self.thr_min
 

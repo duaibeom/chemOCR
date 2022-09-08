@@ -103,7 +103,6 @@ class DBLoss(nn.Module):
         self.dice_loss = DiceLoss(eps=eps)
         self.ce_loss = nn.CrossEntropyLoss(weight=ce_weight, ignore_index=0)
 
-
     def balance_bce_loss(self, pred, gt, mask):
 
         positive = gt * mask
