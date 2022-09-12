@@ -5,8 +5,6 @@ import numpy as np
 
 from rdkit import Chem
 
-from utils.emnist import PredictAtomChar
-
 b_type_list = {
     3: Chem.BondType.SINGLE,
     4: Chem.BondType.DOUBLE,
@@ -65,8 +63,8 @@ def get_pair(array1, array2):
     min_index = min_dist.argsort()
     limit_idx = min_index[:2]
     # print(min_dist[limit_idx[1]])
-    if min_dist[limit_idx[1]] > 6.7:
-        return
+    # if min_dist[limit_idx[1]] > 6.7:
+    #     return
     return limit_idx
 
 
@@ -112,7 +110,7 @@ def get_mol_conn_info(out, image, char_model):
             if _polygon.shape.__len__() > 1:
                 rect = cv2.minAreaRect(_polygon)
                 (x, y), (w, h), ang = rect
-                if w * h > 5:
+                if w * h > 3:
                     box = cv2.boxPoints(rect)
                     _ctrs.append([x, y])
                     if idx == 2:
@@ -143,9 +141,9 @@ def get_mol_conn_info(out, image, char_model):
             if cv2.contourArea(_polygon) > 1:
                 rect = cv2.minAreaRect(_polygon)
                 (x, y), (w, h), ang = rect
-                if (w * h > 30) and idx > 3:
+                if (w * h > 10) and (idx > 3):
                     append_func(_ctrs, rect, x, y, w, h, bond_length, _poly)
-                elif (w * h > 9) and idx == 3:
+                elif (w * h > 7) and (idx == 3):
                     append_func(_ctrs, rect, x, y, w, h, bond_length, _poly)
 
         contours[idx] = np.array(_ctrs, dtype=np.float16)
@@ -175,7 +173,13 @@ def get_mol_conn_info(out, image, char_model):
                 if _pair_idx is not None:
                     b_pair[idx].append(_pair_idx)
 
-    return contours, b_pair, pred_heavy_char_list, pred_char_list, pred_img_char_list
+    return (
+        contours,
+        b_pair,
+        pred_heavy_char_list,
+        pred_char_list,
+        pred_img_char_list,
+    )
 
 
 def get_mol(contours, pred_char_list, b_pair):

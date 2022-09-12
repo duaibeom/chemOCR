@@ -143,30 +143,32 @@ class PredictAtomChar:
         if rule_func is None:
 
             def rule_func(pred):
-                if pred in ["0", "Q"]:
-                    pred = "O"
-                elif pred in ["A"]:
-                    pred = "H"
-                elif pred in ["a", "C"]:
-                    pred = "Cl"
-                elif pred in ["E", "t"]:
-                    pred = "F"
-                elif pred in ["5", "3"]:
-                    pred = "S"
                 return pred
 
         self.rules = rule_func
 
+    def denormalize(self, x, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
+        ten = x.clone()
+        for t, m, s in zip(ten, mean, std):
+            t.mul_(s).add_(m)
+        return torch.clamp(ten, 0, 1)
+
     def pre_img(self, _img):
-        # y = .2126 * _img[:, :, 2] + .7152 * _img[:, :, 1] + .0722 * _img[:, :, 0]
-        y = 0.33 * _img[:, 0, :, :] + 0.33 * _img[:, 1, :, :] + 0.33 * _img[:, 2, :, :]
-        y = ((y > 0.8).to(dtype=torch.float32) - 0.5) / 0.22
-        return y[
+        # _img = self.denormalize(_img)
+        # x = (
+        #     0.2126 * _img[:, 2, :, :]
+        #     + 0.7152 * _img[:, 1, :, :]
+        #     + 0.0722 * _img[:, 0, :, :]
+        # )
+        x = 0.33 * _img[:, 0, :, :] + 0.33 * _img[:, 1, :, :] + 0.33 * _img[:, 2, :, :]
+        # x = (x - 0.5) / 0.22
+        # x = ((x > 0.8).to(dtype=torch.float32) - 0.5) / 0.22
+        return x[
             :,
             None,
         ]
 
-    def __call__(self, char_pos, image, img_size: tuple = (20, 20)):
+    def __call__(self, char_pos, image, img_size: tuple = (14, 14)):
 
         pred_char_list = []
         pred_img_char_list = []
@@ -176,9 +178,9 @@ class PredictAtomChar:
         for i in char_pos:
             _max, _min = i
             _image = image[:, :, _min[1] : _max[1], _min[0] : _max[0]]
-            _image = F.pad(_image, (2, 2, 2, 2), value=2.2727)
-            _image = F.interpolate(_image, size=img_size, mode="bilinear")
-            # _image = F.interpolate(_image, size=img_size)
+            _image = F.pad(_image, (1, 1, 1, 1), value=2.2727)
+            # _image = F.interpolate(_image, size=img_size, mode="bilinear")
+            _image = F.interpolate(_image, size=img_size)
             pred = eminst_class[self.model(_image).argmax()]
             # pred = "0"
             pred = self.rules(pred)

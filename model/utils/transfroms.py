@@ -142,13 +142,13 @@ def get_train_transform():
             # A.PadIfNeeded(512, 512),
             A.Resize(512, 512),
             A.ShiftScaleRotate(
-                scale_limit=(-0.2, 0.5), rotate_limit=0, shift_limit=0, p=0.5
+                scale_limit=(-0.3, 0.5), rotate_limit=0, shift_limit=0, p=0.5
             ),
             # A.HorizontalFlip(p=0.5),
             A.ChannelShuffle(p=0.4),
             A.Blur(blur_limit=5, p=0.3),
             A.RandomBrightnessContrast(p=0.3),
-            A.GaussNoise(var_limit=(0, 0.2), p=0.3),
+            A.GaussNoise(var_limit=(0, 255), p=0.3),
             # A.VerticalFlip(p=0.4),
             # A.InvertImg(p=0.3),
             # A.Normalize(mean=(0.5), std=(0.22), max_pixel_value=1),
@@ -164,8 +164,6 @@ def get_valid_transform():
             # A.Resize(240, 427),
             A.Resize(512, 512),
             # A.RandomCrop(240, 320),
-            # A.Normalize(),
-            # A.Normalize(mean=(0.949), std=(0.013)),
             # A.Normalize(mean=(0.5), std=(0.22), max_pixel_value=1),
             A.Normalize(),
             ToTensorV2(),

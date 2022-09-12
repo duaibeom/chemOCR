@@ -6,6 +6,8 @@ ChemOCR(OCSR)
 DB(Differentiable Binarization)-based Optical Chemical Structure Recognition  
 </h3> 
 
+<img src="data/demo_image.png" align="center">
+
 ### Backbone
 
 - Swin
@@ -28,10 +30,10 @@ DB(Differentiable Binarization)-based Optical Chemical Structure Recognition
 - (Inner bridged) Complex Ring is not possible.
 
 ### TODO
-- [ ] Character recognition (performance)
+- [x] Character recognition (performance)
+- [x] Web front-end (streamlit)
 - [ ] Bond direction analysis
 - [ ] Docs
-- [ ] Web front-end (streamlit or svelte-kit)
 
 ## References
 

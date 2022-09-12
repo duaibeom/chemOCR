@@ -1,3 +1,4 @@
+from PIL import Image
 import numpy as np
 import pyvips
 
@@ -37,6 +38,7 @@ class MolSVG:
         multipleBondOffset: float = 0.15,
         fixedFontSize: int = -1,
         fixedBondLength: float = -1,
+        cario: bool = True,
         mono_color_image: bool = False,
         gray: bool = False,
     ) -> None:
@@ -56,15 +58,22 @@ class MolSVG:
         )
         if gray:
             self.draw_ops.useBWAtomPalette()
-        _d2d = self.get_d2d(precision)
-        _svg_raw = _d2d.GetDrawingText()
 
-        _img = pyvips.Image.svgload_buffer(_svg_raw.encode())
-        if mono_color_image:
-            _img = _img.colourspace("b-w").numpy()[:, :, 0]
-        else:
-            # _img = _img.colourspace("rgb").numpy()[:, :, 0]
+        if cario:
+            _d2d = self.get_d2d_cario(precision)
+            _img_raw = _d2d.GetDrawingText()
+            _img = pyvips.Image.new_from_buffer(_img_raw, "")
             _img = _img.numpy()
+
+        else:
+            _d2d = self.get_d2d(precision)
+            _svg_raw = _d2d.GetDrawingText()
+            _img = pyvips.Image.svgload_buffer(_svg_raw.encode())
+            if mono_color_image:
+                _img = _img.colourspace("b-w").numpy()[:, :, 0]
+            else:
+                _img = _img.colourspace("rgb").numpy()[:, :, 0]
+                _img = _img.numpy()
 
         self.image = _img
         self.image_size = tuple(_img.shape[:2])
@@ -82,7 +91,8 @@ class MolSVG:
 
         scaleFactor = self.draw_ops.scalingFactor * (1 + 2 * self.draw_ops.padding)
 
-        atom_size = scaleFactor * 0.18
+        # atom_size = scaleFactor * 0.18
+        atom_size = scaleFactor * 0.1
 
         ## BBOX
         atom_bboxes = self.gen_atom_bbox(atom_arr, atom_size)
@@ -91,6 +101,7 @@ class MolSVG:
         ]
 
         char_masks = self._get_mask(atom_chars)
+        # char_masks = self._get_mask(atom_comps.values())
         # char_bboxes = self.get_char_bbox(atom_chars)
         bond_data = {}
         bond_data["mask"] = self._get_mask(bond_comps["svg"].values())
@@ -167,6 +178,23 @@ class MolSVG:
         # _d2d_ops.fontFile()
 
         return _d2d_ops
+
+    def get_d2d_cario(self, precision: int = 1):
+        _mol = rdMolDraw2D.PrepareMolForDrawing(self.mol)
+
+        _d2d = Draw.MolDraw2DCairo(-1, -1)
+
+        cgparams.minimizerPrecision = precision_list[precision]
+        rdCoordGen.AddCoords(_mol, cgparams)
+
+        _d2d.SetDrawOptions(self.draw_ops)
+
+        if self.comic:
+            Draw.SetComicMode(_d2d.drawOptions())
+
+        _d2d.DrawMolecule(_mol)
+        _d2d.FinishDrawing()
+        return _d2d
 
     # @timer
     def get_d2d(self, precision: int = 1):

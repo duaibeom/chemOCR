@@ -40,12 +40,12 @@ def main(args):
 
     # ------ CONFIG
     HOME = ".."
-    DATA_DIR = f"{HOME}/Data/ChEMBL/OCR_RGB"
+    DATA_DIR = f"{HOME}/Data/ChEMBL/OCR_RGB_sep"
     TRAIN_PROCESS = ["train", "val"]
     DATAFRAME_LIST = dict(
         train=f"data/chembl_31_smiles_train.csv",
         val=f"data/chembl_31_smiles_val.csv",
-        test=f"data/chembl_31_smiles_test.csv",
+        # test=f"data/chembl_31_smiles_test.csv",
     )
 
     # ------ WANDB CONFIG
@@ -94,12 +94,8 @@ def main(args):
         out_channels=96,
         head_in_channels=480,
     )
-    # model.load_state_dict(
-    #     torch.load("backup/model_weights.mbv3s.5n128h320.8c.pth"), strict=False
-    # )
-    # model.load_state_dict(torch.load("model_weights.v9.mbv3s.final.pth"), strict=False)
-    model.load_state_dict(torch.load("model_weights.v9_rgb.mbv3s.5n192h480.final.pth"))
-    # model.load_state_dict(torch.load("backup/model_weights.mbv3s.5n128h320.8c.pth"))
+    model.load_state_dict(torch.load("model_weights.v9_rgb.mbv3s.final.pth"))
+    # model.load_state_dict(torch.load("model_weights.v9_rgb.mbv3s.5n192h480.final.pth"))
     model.to(device)
     logger.info(f"Model progress. {time.perf_counter() - _time:.4f}s")
 
@@ -110,11 +106,11 @@ def main(args):
     )
 
     # ------ LOSS
-    _wy = torch.Tensor([0.3, 0.2, 0.4, 0.2, 0.2, 1, 0.6, 1]).to(device)
+    _wy = torch.Tensor([0.1, 0.5, 0.5, 0.5, 0.5, 1, 0.8, 1]).to(device)
     loss_func = DBLoss(
         alpha=1,
         beta=10,
-        gamma=0.4,
+        gamma=0.5,
         negative_ratio=3,
         # downscaled=True,
         ce_weight=_wy,
@@ -159,5 +155,5 @@ if __name__ == "__main__":
         torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
     )
 
-    params = dict(epochs=60, lr=5e-5, batch_size=32, fp16=True)
+    params = dict(epochs=60, lr=3e-5, batch_size=32, fp16=True)
     main(params)

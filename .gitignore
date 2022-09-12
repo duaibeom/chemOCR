@@ -5,6 +5,7 @@ backup
 *_data/
 log/
 tmp_img/
+configs
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

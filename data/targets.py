@@ -95,10 +95,12 @@ class DBNetTargets:
             (x, y), (w, h), ang = rect
 
             cv2.fillPoly(_dummy, [box], 1)  # v7
-            if (w > 4) and (h > 4):
+            if (w > 5) and (h > 5):
                 cv2.drawContours(_dummy, [box], 0, 0, 2)  # v7
-            else:
-                cv2.drawContours(_dummy, [box], 0, 1, 1)  # v7
+            elif (w < 4) or (h < 4):
+                cv2.drawContours(_dummy, [box], 0, 1, 2)  # v7
+            # if (w < 3) or (h < 3):
+            #     cv2.drawContours(_dummy, [box], 0, 1, 2)  # v7
 
             char_mask.append(np.array(_dummy, dtype=np.uint8))
             cv2.fillPoly(_dummy, [box], 1)
@@ -106,10 +108,14 @@ class DBNetTargets:
             char_buffered_mask.append(np.array(_dummy, dtype=np.uint8))
 
         char_mask_list = np.array(char_mask, dtype=np.uint8)
+        # char_buffered_mask = (
+        #     np.array(char_buffered_mask, dtype=np.uint8).sum(axis=0) == 1
+        # )
+        # char_mask = char_mask_list.sum(axis=0) * char_buffered_mask
         char_buffered_mask = (
-            np.array(char_buffered_mask, dtype=np.uint8).sum(axis=0) == 1
+            np.array(char_buffered_mask, dtype=np.uint8).sum(axis=0) > 0
         )
-        char_mask = char_mask_list.sum(axis=0) * char_buffered_mask
+        char_mask = char_mask_list.sum(axis=0) > 0
 
         return {
             "mask": char_mask,
@@ -128,7 +134,7 @@ class DBNetTargets:
 
             cv2.fillPoly(_dummy, [_poly], 1)  # v7
             atom_buffered_mask.append(np.array(_dummy, dtype=np.uint8))
-            cv2.drawContours(_dummy, [_poly], 0, 0, 3)  # v7
+            # cv2.drawContours(_dummy, [_poly], 0, 0, 1)  # v7
             # cv2.drawContours(_dummy, [_poly], 0, 0, 6)  # v7
             atom_mask.append(np.array(_dummy, dtype=np.uint8))
 
