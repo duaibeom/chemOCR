@@ -8,6 +8,12 @@ DB(Differentiable Binarization)-based Optical Chemical Structure Recognition
 
 <img src="data/demo_image.png" align="center">
 
+---
+
+```sh
+streamlit run demo.py
+```
+
 ### Backbone
 
 - Swin
@@ -25,15 +31,15 @@ DB(Differentiable Binarization)-based Optical Chemical Structure Recognition
 <img src="data/sample_data.png">
 
 ### Limitation
-- Molecular Weight < 600
-- Non-ion molecule
-- (Inner bridged) Complex Ring is not possible.
+- Non-charged atom
+- (Inner bridged) Complex ring is not possible.
+- Specific resolution of image
+- Small text atoms (like Iodin) are not recognized.
 
 ### TODO
-- [x] Character recognition (performance)
+- [x] Character recognition (pretrained model from MMOCR RCNN)
 - [x] Web front-end (streamlit)
 - [ ] Bond direction analysis
-- [ ] Docs
 
 ## References
 
